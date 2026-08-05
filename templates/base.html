@@ -28,7 +28,16 @@
   </main>
 
   <footer>
-    Nästa påfyllning: <strong>lördag {{ next_saturday|datum }}</strong>
+    {# Inloggningssidan skickar inget next_saturday – den vet inget om barnen. #}
+    {% if next_saturday %}
+      Nästa påfyllning: <strong>lördag {{ next_saturday|datum }}</strong>
+      {% if losenordsskydd %} · {% endif %}
+    {% endif %}
+    {% if losenordsskydd %}
+      <form method="post" action="{{ url_for('logout') }}" class="utloggning">
+        <button type="submit">Logga ut</button>
+      </form>
+    {% endif %}
   </footer>
 </body>
 </html>

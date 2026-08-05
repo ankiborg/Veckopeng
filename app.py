@@ -11,6 +11,7 @@ import sqlite3
 from flask import Flask, flash, g, redirect, render_template, request, url_for
 
 import allowance
+import auth
 import db
 from clock import format_date, parse_date, today, weekday_name
 from money import AmountError, format_ore, ore_to_input, parse_amount
@@ -18,7 +19,11 @@ from money import AmountError, format_ore, ore_to_input, parse_amount
 DEFAULT_WEEKLY_ORE = 2500  # 25 kr
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("VECKOPENG_SECRET", "veckopeng-lokal-nyckel")
+
+# Installeras FÖRE _accrue nedan. before_request-funktioner körs i den
+# ordning de registreras, och en utloggad besökare ska stoppas innan
+# appen börjar skriva veckopengar i databasen.
+auth.install(app)
 
 
 # --- databas per request -------------------------------------------------
@@ -41,7 +46,7 @@ def _close_db(_exc):
 @app.before_request
 def _accrue():
     """Bokför alla lördagar som passerat sedan förra sidvisningen."""
-    if request.endpoint in {"static", None}:
+    if request.endpoint in {"static", "login", "logout", None}:
         return
     allowance.accrue_all(conn())
 
@@ -227,5 +232,14 @@ def remove_child(child_id: int):
 
 
 if __name__ == "__main__":
-    # host 0.0.0.0 så mobilen på samma wifi kommer åt den.
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
+    # Bara för körning hemma. På Railway startar gunicorn appen i stället
+    # (se Procfile) – Flasks egen server är inte byggd för att stå publik.
+    #
+    # debug=True får ALDRIG stå på mot internet: felsidan har en konsol
+    # där vem som helst kan köra kod på servern. Därför en egen variabel
+    # som måste sättas med flit, inte ett påslaget standardläge.
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000)),
+        debug=os.environ.get("VECKOPENG_DEBUG") == "1",
+    )

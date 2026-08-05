@@ -44,9 +44,17 @@ def db_path() -> Path:
 
 
 def connect(path: str | Path | None = None) -> sqlite3.Connection:
-    conn = sqlite3.connect(str(path or db_path()))
+    fil = Path(path or db_path())
+    fil.parent.mkdir(parents=True, exist_ok=True)  # Railways volym kan vara tom
+    conn = sqlite3.connect(str(fil))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    # WAL låter en läsare och en skrivare jobba samtidigt. Utan den låser
+    # gunicorns arbetare ut varandra och sidan svarar "database is locked"
+    # när två telefoner laddar samma sekund.
+    conn.execute("PRAGMA journal_mode = WAL")
+    # Vänta hellre en stund än att kasta fel direkt vid en krock.
+    conn.execute("PRAGMA busy_timeout = 5000")
     return conn
 
 
