@@ -1,0 +1,267 @@
+/* Veckopeng – mobilen först. Appen används mest stående i handen. */
+
+:root {
+  --papper: #faf7f2;
+  --kort: #ffffff;
+  --text: #1f2328;
+  --svag: #6b7280;
+  --linje: #e6e1d8;
+  --plus: #1f7a4d;
+  --minus: #b3261e;
+  --accent: #3f6fd8;
+  --radie: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papper: #16181c;
+    --kort: #1f2227;
+    --text: #ecedee;
+    --svag: #9aa1ab;
+    --linje: #31353c;
+    --plus: #57c98a;
+    --minus: #ff8078;
+    --accent: #7ea2f2;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--papper);
+  color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 1rem 3rem;
+}
+
+/* --- topp --- */
+
+.topp {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.logo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.tillbaka {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: .95rem;
+}
+
+footer {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 1rem 2rem;
+  color: var(--svag);
+  font-size: .85rem;
+  text-align: center;
+}
+
+/* --- summa --- */
+
+.summa {
+  background: var(--kort);
+  border: 1px solid var(--linje);
+  border-radius: var(--radie);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.summa-etikett { margin: 0; color: var(--svag); font-size: .9rem; }
+.summa-not { margin: .35rem 0 0; color: var(--svag); font-size: .85rem; }
+
+.summa-belopp {
+  margin: .25rem 0 0;
+  font-size: 2.6rem;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: var(--plus);
+}
+
+/* Minusregeln står sist i filen – annars vinner .historik .belopp på
+   senare position och uttagen skrivs i grönt. */
+
+/* --- barnkort --- */
+
+.barnkort { list-style: none; margin: 0 0 1.25rem; padding: 0; display: grid; gap: .75rem; }
+
+.barnkort a {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: .1rem 1rem;
+  background: var(--kort);
+  border: 1px solid var(--linje);
+  border-radius: var(--radie);
+  padding: 1rem 1.1rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.barnkort a:hover { border-color: var(--accent); }
+
+/* Rutorna pekas ut explicit. Med bara auto-placering hamnar saldot, som
+   spänner över båda raderna, i vänsterkolumnen och knuffar undan namnet. */
+.barn-namn { grid-column: 1; grid-row: 1; font-size: 1.2rem; font-weight: 600; }
+.barn-veckopeng { grid-column: 1; grid-row: 2; color: var(--svag); font-size: .85rem; }
+
+.barn-saldo {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  justify-self: end;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--plus);
+}
+
+/* --- paneler och formulär --- */
+
+.panel {
+  background: var(--kort);
+  border: 1px solid var(--linje);
+  border-radius: var(--radie);
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+details.panel > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--svag);
+}
+
+details.panel[open] > summary { margin-bottom: 1rem; }
+
+.stack { display: grid; gap: .85rem; }
+.rad { display: flex; gap: .75rem; flex-wrap: wrap; }
+.vaxa { flex: 1 1 8rem; }
+
+label { display: grid; gap: .3rem; font-size: .9rem; color: var(--svag); }
+label small { color: var(--svag); font-size: .78rem; }
+
+input[type="text"], input[type="date"] {
+  width: 100%;
+  padding: .6rem .7rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--papper);
+  border: 1px solid var(--linje);
+  border-radius: 10px;
+}
+
+input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: .7rem 1rem;
+  border: 1px solid var(--linje);
+  border-radius: 10px;
+  background: var(--papper);
+  color: var(--text);
+  cursor: pointer;
+}
+
+button:hover { border-color: var(--accent); }
+
+.knappar button { flex: 1 1 10rem; }
+.knappar .plus { background: var(--plus); border-color: var(--plus); color: #fff; }
+.knappar .dra  { background: var(--minus); border-color: var(--minus); color: #fff; }
+
+.utbetalning { margin: -.5rem 0 1.5rem; }
+.utbetalning button { width: 100%; }
+
+.farligt { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--linje); }
+.farligt button { background: transparent; color: var(--minus); border-color: var(--minus); }
+
+/* --- historik --- */
+
+h2 { font-size: 1rem; color: var(--svag); margin: 1.5rem 0 .6rem; }
+
+.historik {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--kort);
+  border: 1px solid var(--linje);
+  border-radius: var(--radie);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.historik td {
+  padding: .6rem .7rem;
+  border-top: 1px solid var(--linje);
+  vertical-align: middle;
+}
+
+.historik tr:first-child td { border-top: 0; }
+
+.historik .datum { color: var(--svag); font-size: .82rem; white-space: nowrap; width: 1%; }
+.historik .text { font-size: .95rem; }
+.historik .belopp { text-align: right; font-weight: 600; color: var(--plus); white-space: nowrap; }
+.historik .atgard { width: 1%; }
+
+.historik .atgard button {
+  padding: .25rem .5rem;
+  border: 0;
+  background: transparent;
+  color: var(--svag);
+  font-size: .95rem;
+}
+
+.historik .atgard button:hover { color: var(--minus); }
+
+.historik .makulerad { opacity: .45; }
+.historik .makulerad .belopp { color: var(--svag); }
+
+.tagg {
+  display: inline-block;
+  margin-left: .35rem;
+  padding: .05rem .4rem;
+  border-radius: 999px;
+  background: var(--papper);
+  border: 1px solid var(--linje);
+  color: var(--svag);
+  font-size: .7rem;
+}
+
+/* --- flash --- */
+
+.flash { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: .5rem; }
+
+.flash li {
+  padding: .65rem .8rem;
+  border-radius: 10px;
+  border: 1px solid var(--linje);
+  background: var(--kort);
+  font-size: .92rem;
+}
+
+.flash-ok  { border-left: 4px solid var(--plus); }
+.flash-fel { border-left: 4px solid var(--minus); }
+
+.tomt { color: var(--svag); text-align: center; padding: 1.5rem 0; }
+
+/* --- minus alltid rött, sist så inget annat hinner före --- */
+
+.summa-belopp.minus,
+.barn-saldo.minus,
+.historik .belopp.minus { color: var(--minus); }

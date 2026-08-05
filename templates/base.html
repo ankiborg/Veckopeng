@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Veckopeng{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>%F0%9F%90%B7</text></svg>">
+</head>
+<body>
+  <header class="topp">
+    <a class="logo" href="{{ url_for('index') }}">🐷 Veckopeng</a>
+    {% block header_extra %}{% endblock %}
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flash">
+          {% for kategori, text in messages %}
+            <li class="flash-{{ kategori }}">{{ text }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    Nästa påfyllning: <strong>lördag {{ next_saturday|datum }}</strong>
+  </footer>
+</body>
+</html>
