@@ -1,0 +1,14 @@
+# Databasen är familjens data, inte kod. Den ska aldrig till GitHub.
+*.db
+*.db-journal
+*.db-wal
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+
+.DS_Store
+Thumbs.db
