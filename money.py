@@ -58,7 +58,9 @@ def format_ore(ore: int) -> str:
     """Formatera öre som "25 kr" eller "25,50 kr" – jämna kronor slipper ",00"."""
     tecken = "-" if ore < 0 else ""
     kronor, rest = divmod(abs(int(ore)), 100)
-    # Tusentalsavgränsare är hårt mellanslag, som svensk standard vill ha det.
+    # Hårt mellanslag både som tusentalsavgränsare (svensk standard) och
+    # framför "kr" – annars bryter webbläsaren raden mitt i beloppet och
+    # lämnar ett ensamt "kr" på nästa rad.
     heltal = f"{kronor:,}".replace(",", "\xa0")
     decimaler = f",{rest:02d}" if rest else ""
-    return f"{tecken}{heltal}{decimaler} kr"
+    return f"{tecken}{heltal}{decimaler}\xa0kr"
