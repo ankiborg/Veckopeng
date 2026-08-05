@@ -66,12 +66,27 @@ main {
 }
 
 footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
   max-width: 640px;
   margin: 0 auto;
   padding: 0 1rem 2rem;
   color: var(--svag);
   font-size: .85rem;
   text-align: center;
+}
+
+.utloggning button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: .85rem;
+  font-weight: 400;
+  text-decoration: underline;
 }
 
 /* --- summa --- */
@@ -259,6 +274,21 @@ h2 { font-size: 1rem; color: var(--svag); margin: 1.5rem 0 .6rem; }
 .flash-fel { border-left: 4px solid var(--minus); }
 
 .tomt { color: var(--svag); text-align: center; padding: 1.5rem 0; }
+
+/* --- inloggning --- */
+
+.inloggning { max-width: 22rem; margin: 3rem auto 0; }
+.inloggning .fel { margin: 0; color: var(--minus); font-size: .9rem; }
+
+input[type="password"] {
+  width: 100%;
+  padding: .6rem .7rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--papper);
+  border: 1px solid var(--linje);
+  border-radius: 10px;
+}
 
 /* --- minus alltid rött, sist så inget annat hinner före --- */
 

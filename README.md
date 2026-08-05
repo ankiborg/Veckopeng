@@ -46,10 +46,58 @@ kvar med det gamla beloppet.
 
 Allt ligger i `veckopeng.db` (SQLite) bredvid koden. Filen är gitignorerad –
 kopiera den för att säkerhetskopiera, och lägg den tillbaka för att återställa.
-`VECKOPENG_DB` pekar om den om du vill ha den någon annanstans.
+`VECKOPENG_DB` pekar om den om du vill ha den någon annanstans; på Railway
+måste den peka på en volym.
+
+Hemma behövs inget lösenord. Sätts `VECKOPENG_LOSENORD` slås inloggningen på –
+gör det så fort appen ligger på en publik adress.
 
 Pengar lagras i **öre** som heltal, aldrig som decimaltal. Ett saldo som
 räknas i flyttal driver i väg efter tillräckligt många insättningar.
+
+## Lägga upp den på Railway
+
+Fyra saker, och de två första är inte valfria.
+
+### 1. En volym – annars försvinner all data
+
+Railways filsystem nollställs vid varje deploy. Utan volym ligger
+`veckopeng.db` i containern och raderas nästa gång du pushar en ändring. Alla
+saldon är då borta.
+
+I Railway: **Service → Variables → + Volume**, montera den på `/data`.
+
+### 2. Miljövariabler
+
+| Variabel | Värde | Varför |
+| --- | --- | --- |
+| `VECKOPENG_DB` | `/data/veckopeng.db` | Lägger databasen på volymen |
+| `VECKOPENG_LOSENORD` | ett lösenord ni väljer | Adressen är publik – utan detta kan vem som helst som hittar den ändra barnens pengar |
+
+`PORT` sätter Railway själv. `VECKOPENG_SECRET` behövs inte; nyckeln som
+signerar inloggningen härleds ur lösenordet så att den överlever omstarter.
+
+### 3. Startkommandot
+
+`Procfile` säger redan åt Railway att köra gunicorn. Du behöver inte skriva
+något i **Custom Start Command** – lämna det tomt.
+
+Railway bygger med Nixpacks och hittar `requirements.txt` automatiskt.
+
+### 4. Domän
+
+**Settings → Networking → Generate Domain** ger appen en adress. Spara den som
+bokmärke på hemskärmen i telefonen så ser den ut som en app.
+
+### Byta lösenord senare
+
+Ändra `VECKOPENG_LOSENORD` i Railway. Alla loggas ut, eftersom sessionsnyckeln
+följer lösenordet.
+
+### Säkerhetskopiera
+
+Databasen ligger på volymen, inte i git. `railway ssh` och kopiera ut
+`/data/veckopeng.db` med jämna mellanrum – det är familjens enda kopia.
 
 ## Tester
 
@@ -62,9 +110,11 @@ python -m pytest tests -q
 | Fil | Vad den gör |
 | --- | --- |
 | `app.py` | Flask-appen: rutter, formulärhantering, validering |
+| `auth.py` | Lösenordsskyddet när appen ligger publikt |
 | `allowance.py` | Lördagspåfyllningen |
 | `db.py` | SQLite-schema och alla frågor |
 | `money.py` | Öre in och ut, svensk formatering |
 | `clock.py` | Svensk tid, lördagar, datumformat |
-| `templates/` | Startvy och barnsida |
+| `templates/` | Startvy, barnsida och inloggning |
 | `static/style.css` | Utseendet, ljust och mörkt läge |
+| `Procfile` | Startkommandot Railway använder |
