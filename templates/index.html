@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="summa">
+    <p class="summa-etikett">Vi är skyldiga totalt</p>
+    <p class="summa-belopp">{{ total|kr }}</p>
+  </section>
+
+  {% if children %}
+    <ul class="barnkort">
+      {% for barn in children %}
+        <li>
+          <a href="{{ url_for('child', child_id=barn['id']) }}">
+            <span class="barn-namn">{{ barn['name'] }}</span>
+            <span class="barn-saldo {{ 'minus' if barn['balance_ore'] < 0 }}">
+              {{ barn['balance_ore']|kr }}
+            </span>
+            <span class="barn-veckopeng">{{ barn['weekly_ore']|kr }} i veckan</span>
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="tomt">Inga barn upplagda än. Lägg till dem här nedanför.</p>
+  {% endif %}
+
+  <details class="panel" {% if not children %}open{% endif %}>
+    <summary>Lägg till ett barn</summary>
+    <form method="post" action="{{ url_for('add_child') }}" class="stack">
+      <label>
+        Namn
+        <input type="text" name="name" required autocomplete="off" placeholder="T.ex. Elsa">
+      </label>
+      <label>
+        Veckopeng (kr per lördag)
+        <input type="text" name="weekly" value="25" inputmode="decimal">
+      </label>
+      <label>
+        Räkna veckopeng från och med
+        <input type="date" name="start_date" value="{{ today }}">
+        <small>Lördagar före det här datumet bokförs inte.</small>
+      </label>
+      <button type="submit">Lägg till</button>
+    </form>
+  </details>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}{{ child['name'] }} – Veckopeng{% endblock %}
+
+{% block header_extra %}
+  <a class="tillbaka" href="{{ url_for('index') }}">← Alla barn</a>
+{% endblock %}
+
+{% block content %}
+  <section class="summa">
+    <p class="summa-etikett">{{ child['name'] }} har tjänat in</p>
+    <p class="summa-belopp {{ 'minus' if child['balance_ore'] < 0 }}">
+      {{ child['balance_ore']|kr }}
+    </p>
+    <p class="summa-not">{{ child['weekly_ore']|kr }} varje lördag</p>
+  </section>
+
+  <form method="post" action="{{ url_for('add_transaction', child_id=child['id']) }}"
+        class="panel stack">
+    <div class="rad">
+      <label class="vaxa">
+        Belopp
+        <input type="text" name="amount" inputmode="decimal" required
+               autocomplete="off" placeholder="20">
+      </label>
+      <label class="vaxa">
+        Datum
+        <input type="date" name="date" value="{{ today }}">
+      </label>
+    </div>
+    <label>
+      Vad gällde det?
+      <input type="text" name="note" autocomplete="off"
+             placeholder="T.ex. dammsugit, glass, klippt gräset">
+    </label>
+    <div class="rad knappar">
+      <button type="submit" name="direction" value="in" class="plus">
+        + Lägg till pengar
+      </button>
+      <button type="submit" name="direction" value="ut" class="dra">
+        − Dra bort pengar
+      </button>
+    </div>
+  </form>
+
+  {% if child['balance_ore'] > 0 %}
+    <form method="post" action="{{ url_for('pay_out', child_id=child['id']) }}"
+          class="utbetalning"
+          onsubmit="return confirm('Betala ut {{ child['balance_ore']|kr }} till {{ child['name'] }} och nolla saldot?')">
+      <button type="submit">Betala ut allt ({{ child['balance_ore']|kr }})</button>
+    </form>
+  {% endif %}
+
+  <h2>Historik</h2>
+  {% if transactions %}
+    <table class="historik">
+      <tbody>
+        {% for post in transactions %}
+          <tr class="{{ 'makulerad' if post['amount_ore'] == 0 }}">
+            <td class="datum">{{ post['date']|datum }}</td>
+            <td class="text">
+              {{ post['note'] }}
+              {% if post['kind'] == 'veckopeng' and post['amount_ore'] != 0 %}
+                <span class="tagg">automatisk</span>
+              {% endif %}
+            </td>
+            <td class="belopp {{ 'minus' if post['amount_ore'] < 0 }}">
+              {% if post['amount_ore'] > 0 %}+{% endif %}{{ post['amount_ore']|kr }}
+            </td>
+            <td class="atgard">
+              <form method="post"
+                    action="{{ url_for('delete_transaction', txn_id=post['id']) }}"
+                    onsubmit="return confirm('Ta bort den här posten?')">
+                <button type="submit" title="Ta bort">✕</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="tomt">Inget bokfört än.</p>
+  {% endif %}
+
+  <details class="panel">
+    <summary>Inställningar för {{ child['name'] }}</summary>
+    <form method="post" action="{{ url_for('update_child', child_id=child['id']) }}"
+          class="stack">
+      <label>
+        Namn
+        <input type="text" name="name" value="{{ child['name'] }}" required>
+      </label>
+      <label>
+        Veckopeng (kr per lördag)
+        <input type="text" name="weekly" value="{{ child['weekly_ore']|falt }}"
+               inputmode="decimal">
+        <small>Ändringen gäller framåt. Redan bokförda lördagar ligger kvar.</small>
+      </label>
+      <button type="submit">Spara</button>
+    </form>
+
+    <form method="post" action="{{ url_for('remove_child', child_id=child['id']) }}"
+          class="stack farligt">
+      <label>
+        Ta bort {{ child['name'] }} och all historik – skriv namnet för att bekräfta
+        <input type="text" name="confirm" autocomplete="off" placeholder="{{ child['name'] }}">
+      </label>
+      <button type="submit" class="dra">Ta bort barnet</button>
+    </form>
+  </details>
+{% endblock %}

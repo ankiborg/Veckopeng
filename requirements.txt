@@ -1,0 +1,4 @@
+Flask>=3.0
+# tzdata behövs på Windows – zoneinfo har ingen tidszonsdatabas där.
+tzdata>=2024.1
+pytest>=8.0
