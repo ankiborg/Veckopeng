@@ -11,8 +11,40 @@ till och dra bort pengar manuellt.
 Därefter gjord redo för Railway – volym, gunicorn, lösenordsskydd. Se
 "Railway" nedan och deploy-avsnittet i `README.md`.
 
-45 tester gröna. Appen är klickad igenom i webbläsare i ljust och mörkt läge,
-och provkörd under gunicorn med lösenord och volym påslaget.
+Sedan tillkom **sparkontot**: valfritt per barn, med matchning på varje
+överföring, tak per månad och uttagsgräns per år. Se "Sparkontot" nedan.
+
+63 tester gröna. Appen är klickad igenom i webbläsare i ljust och mörkt läge,
+provkörd under gunicorn med lösenord och volym påslaget, och migreringen är
+körd mot en riktig databasfil från tiden före sparkontot.
+
+## Sparkontot
+
+Varje barn kan ha två konton: `fickpengar` (standard, dit veckopengen går) och
+`sparkonto`. Kontot står i kolumnen `txn.account`.
+
+Tre inställningar per barn, alla i `child`-tabellen:
+
+| Kolumn | Standard | Vad den gör |
+| --- | --- | --- |
+| `match_percent` | 100 | Andel vi lägger på varje överföring |
+| `match_cap_ore` | 10000 | Tak för matchningen per månad |
+| `withdrawals_per_year` | 2 | Uttag per kalenderår |
+
+**Taket finns inte av snålhet utan för att täppa till ett hål.** Matchningen
+sker vid insättning. Utan tak kan samma pengar tas ut och sättas in igen för
+att matchas flera gånger – med två tillåtna uttag per år kan varje krona
+matchas tre gånger. Taket gör kostnaden per månad bestämd på förhand, oavsett
+hur många varv pengarna åker. Testet
+`test_aterinsattning_ger_inte_gratis_pengar_i_all_oandlighet` vaktar detta.
+
+**Uttagsgränsen går att passera med en bock**, och uttaget märks då "utöver
+årsgränsen" i historiken. En gräns som tyst går att klicka igenom är ingen
+gräns; en som aldrig går att öppna blir bara irriterande den dagen cykeln går
+sönder.
+
+Sparade pengar räknas med i totalen – `total_ore` är summan av båda kontona,
+och det är den som visas på startsidan.
 
 ## Railway
 
@@ -75,6 +107,14 @@ i USA skulle annars skriva "Aug" i stället för "aug".
   samtidigt.
 - **`?nasta=` vid inloggning släpper bara igenom interna sökvägar.** Annars går
   sidan att använda för att skicka någon vidare till en annan webbplats.
+- **En överföring är flera rader som hör ihop.** De binds av `txn.group_id` och
+  `db.delete_transaction()` tar bort hela gruppen. Tas bara ena benet bort
+  uppstår pengar ur tomma intet på det andra kontot.
+- **Nya kolumner läggs på med ALTER TABLE, aldrig genom att bygga om
+  tabellen.** Databasen på Railway innehåller riktiga saldon.
+  `db.MIGRATIONS` körs vid varje start och går att köra om.
+- **`format_ore()` sätter hårt mellanslag före "kr".** Annars bryter
+  webbläsaren raden mitt i beloppet och lämnar ett ensamt "kr" på nästa rad.
 
 ## Backlog
 
@@ -96,6 +136,7 @@ Inget av det här är beställt än – det är sådant som ligger nära till ha
 | --- | --- |
 | `app.py` | Flask-appen: rutter, formulärhantering, validering |
 | `auth.py` | Lösenordsskyddet, avstängt när `VECKOPENG_LOSENORD` är tom |
+| `savings.py` | Sparkontot: matchning, tak och uttagsgräns |
 | `allowance.py` | Lördagspåfyllningen och `next_saturday()` |
 | `db.py` | SQLite-schema och alla frågor |
 | `money.py` | `parse_amount()`, `format_ore()`, `ore_to_input()` |
@@ -107,3 +148,4 @@ Inget av det här är beställt än – det är sådant som ligger nära till ha
 | `Procfile` | Startkommandot Railway använder |
 | `tests/test_veckopeng.py` | 34 tester för pengar, lördagar och saldon |
 | `tests/test_auth.py` | 11 tester för inloggningen |
+| `tests/test_savings.py` | 18 tester för sparkontot och migreringen |

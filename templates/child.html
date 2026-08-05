@@ -8,11 +8,19 @@
 
 {% block content %}
   <section class="summa">
-    <p class="summa-etikett">{{ child['name'] }} har tjänat in</p>
+    <p class="summa-etikett">
+      {% if child['savings_on'] %}{{ child['name'] }} har i fickpengar
+      {% else %}{{ child['name'] }} har tjänat in{% endif %}
+    </p>
     <p class="summa-belopp {{ 'minus' if child['balance_ore'] < 0 }}">
       {{ child['balance_ore']|kr }}
     </p>
-    <p class="summa-not">{{ child['weekly_ore']|kr }} varje lördag</p>
+    <p class="summa-not">
+      {{ child['weekly_ore']|kr }} varje lördag
+      {% if child['savings_on'] %}
+        · totalt med sparade pengar: <strong>{{ child['total_ore']|kr }}</strong>
+      {% endif %}
+    </p>
   </section>
 
   <form method="post" action="{{ url_for('add_transaction', child_id=child['id']) }}"
@@ -51,7 +59,91 @@
     </form>
   {% endif %}
 
-  <h2>Historik</h2>
+  {% if child['savings_on'] %}
+    <section class="sparkonto">
+      <div class="spar-topp">
+        <span class="spar-etikett">🏦 Sparkontot</span>
+        <span class="spar-saldo">{{ child['savings_ore']|kr }}</span>
+      </div>
+
+      <form method="post" action="{{ url_for('save_to_savings', child_id=child['id']) }}"
+            class="stack">
+        <label>
+          Flytta från fickpengarna till sparkontot
+          <input type="text" name="amount" inputmode="decimal" required
+                 autocomplete="off" placeholder="10 – eller skriv &quot;allt&quot;">
+          {% if child['match_percent'] %}
+            <small>
+              Vi lägger på {{ child['match_percent'] }} %
+              {% if child['match_percent'] == 100 %}(vi dubblar){% endif %}
+              {% if child['match_cap_ore'] %}
+                – upp till {{ child['match_cap_ore']|kr }} i månaden,
+                {{ (child['match_cap_ore'] - matchat_denna_manad)|kr }} kvar denna månad
+              {% endif %}
+            </small>
+          {% endif %}
+        </label>
+        <button type="submit" class="plus">Spara pengarna</button>
+      </form>
+
+      {% if child['savings_ore'] > 0 %}
+        <form method="post"
+              action="{{ url_for('withdraw_savings', child_id=child['id']) }}"
+              class="stack spar-uttag">
+          <label>
+            Ta ut från sparkontot
+            <input type="text" name="amount" inputmode="decimal" required
+                   autocomplete="off" placeholder="Belopp – eller &quot;allt&quot;">
+          </label>
+          {% if uttag_kvar < 0 %}
+            <small>Ingen gräns för antal uttag.</small>
+          {% elif uttag_kvar > 0 %}
+            <small><strong>{{ uttag_kvar }}</strong> uttag kvar i år.</small>
+          {% else %}
+            <small class="varning">
+              Årets uttag är slut. Kryssa i rutan om ni ändå bestämt er –
+              det syns i historiken.
+            </small>
+            <label class="kryss">
+              <input type="checkbox" name="override" value="1">
+              Gör ett uttag utöver årsgränsen
+            </label>
+          {% endif %}
+          <button type="submit">Ta ut</button>
+        </form>
+      {% endif %}
+
+      {% if savings_transactions %}
+        <table class="historik spar-historik">
+          <tbody>
+            {% for post in savings_transactions %}
+              <tr>
+                <td class="datum">{{ post['date']|datum }}</td>
+                <td class="text">
+                  {{ post['note'] }}
+                  {% if post['kind'] == 'sparbonus' %}
+                    <span class="tagg bonus">bonus</span>
+                  {% endif %}
+                </td>
+                <td class="belopp {{ 'minus' if post['amount_ore'] < 0 }}">
+                  {% if post['amount_ore'] > 0 %}+{% endif %}{{ post['amount_ore']|kr }}
+                </td>
+                <td class="atgard">
+                  <form method="post"
+                        action="{{ url_for('delete_transaction', txn_id=post['id']) }}"
+                        onsubmit="return confirm('Ta bort hela överföringen? Både raden på sparkontot och den på fickpengarna försvinner.')">
+                    <button type="submit" title="Ta bort">✕</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  <h2>{% if child['savings_on'] %}Fickpengar{% else %}Historik{% endif %}</h2>
   {% if transactions %}
     <table class="historik">
       <tbody>
@@ -97,6 +189,40 @@
         <small>Ändringen gäller framåt. Redan bokförda lördagar ligger kvar.</small>
       </label>
       <button type="submit">Spara</button>
+    </form>
+
+    <form method="post"
+          action="{{ url_for('savings_settings', child_id=child['id']) }}"
+          class="stack avdelare">
+      <label class="kryss">
+        <input type="checkbox" name="savings_on" value="1"
+               {% if child['savings_on'] %}checked{% endif %}>
+        Sparkonto för {{ child['name'] }}
+      </label>
+      <label>
+        Vi lägger på (% av varje överföring)
+        <input type="text" name="match_percent" inputmode="numeric"
+               value="{{ child['match_percent'] }}">
+        <small>100 betyder att vi dubblar. 0 stänger av matchningen.</small>
+      </label>
+      <label>
+        Tak för matchningen (kr per månad)
+        <input type="text" name="match_cap" inputmode="decimal"
+               value="{{ child['match_cap_ore']|falt }}">
+        <small>
+          Sätter en övre gräns för vad matchningen kan kosta oss. Utan tak går
+          samma pengar att ta ut och sätta in igen för att matchas flera
+          gånger. 0 = inget tak.
+        </small>
+      </label>
+      <label>
+        Uttag per kalenderår
+        <input type="text" name="withdrawals_per_year" inputmode="numeric"
+               value="{{ child['withdrawals_per_year'] }}">
+        <small>0 = ingen gräns. Gränsen går att gå förbi med en bock, men
+          då syns det i historiken.</small>
+      </label>
+      <button type="submit">Spara sparkontot</button>
     </form>
 
     <form method="post" action="{{ url_for('remove_child', child_id=child['id']) }}"

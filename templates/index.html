@@ -12,10 +12,17 @@
         <li>
           <a href="{{ url_for('child', child_id=barn['id']) }}">
             <span class="barn-namn">{{ barn['name'] }}</span>
-            <span class="barn-saldo {{ 'minus' if barn['balance_ore'] < 0 }}">
-              {{ barn['balance_ore']|kr }}
+            <span class="barn-saldo {{ 'minus' if barn['total_ore'] < 0 }}">
+              {{ barn['total_ore']|kr }}
             </span>
-            <span class="barn-veckopeng">{{ barn['weekly_ore']|kr }} i veckan</span>
+            <span class="barn-veckopeng">
+              {% if barn['savings_on'] and barn['savings_ore'] %}
+                {{ barn['balance_ore']|kr }} i fickan
+                · <span class="sparat">{{ barn['savings_ore']|kr }} sparat</span>
+              {% else %}
+                {{ barn['weekly_ore']|kr }} i veckan
+              {% endif %}
+            </span>
           </a>
         </li>
       {% endfor %}

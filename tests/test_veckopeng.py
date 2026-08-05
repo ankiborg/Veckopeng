@@ -56,14 +56,14 @@ def test_noll_ar_inte_ett_belopp():
 
 @pytest.mark.parametrize(
     "ore,text",
-    [(2500, "25 kr"), (2550, "25,50 kr"), (-2000, "-20 kr"), (0, "0 kr")],
+    [(2500, "25\xa0kr"), (2550, "25,50\xa0kr"), (-2000, "-20\xa0kr"), (0, "0\xa0kr")],
 )
 def test_format_ore(ore, text):
     assert format_ore(ore) == text
 
 
 def test_tusental_far_hart_mellanslag():
-    assert format_ore(150000) == "1\xa0500 kr"
+    assert format_ore(150000) == "1\xa0500\xa0kr"
 
 
 def test_falt_och_parse_gar_runt():
