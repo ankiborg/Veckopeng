@@ -6,6 +6,9 @@ automatiskt varje lördag, plus pengar de tjänar in eller tar ut.
 - **Startvy** med saldot för alla barn och en totalsumma.
 - **Barnsida** med hela historiken, där du lägger till och drar bort pengar.
 - **25 kr varje lördag**, bokfört automatiskt. Beloppet går att ändra per barn.
+- **Kanadensiska dollar** med en växel överst, och en momsknapp som visar vad
+  barnen kan handla för när 13 % moms (Ontario) läggs på i kassan. Kursen
+  hämtas automatiskt; `VECKOPENG_CAD_KURS` låser den om du vill.
 
 ## Kom igång
 
@@ -114,6 +117,7 @@ python -m pytest tests -q
 | `allowance.py` | Lördagspåfyllningen |
 | `db.py` | SQLite-schema och alla frågor |
 | `money.py` | Öre in och ut, svensk formatering |
+| `valuta.py` | Kanadensiska dollar och moms |
 | `clock.py` | Svensk tid, lördagar, datumformat |
 | `templates/` | Startvy, barnsida och inloggning |
 | `static/style.css` | Utseendet, ljust och mörkt läge |

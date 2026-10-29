@@ -11,7 +11,12 @@ till och dra bort pengar manuellt.
 Därefter gjord redo för Railway – volym, gunicorn, lösenordsskydd. Se
 "Railway" nedan och deploy-avsnittet i `README.md`.
 
-45 tester gröna. Appen är klickad igenom i webbläsare i ljust och mörkt läge,
+**2026-10-29:** Kanada-läge. Växel kr/CAD överst på varje sida, och i CAD en
+momsknapp som visar vad barnen kan handla för på prislappen (före 13 % HST,
+Ontario). Valet sparas per telefon i sessionskakan. I CAD-läget skrivs belopp
+in i dollar och räknas om till öre; dollarbeloppet hamnar i anteckningen.
+
+61 tester gröna. Tidigare: 45 tester gröna. Appen är klickad igenom i webbläsare i ljust och mörkt läge,
 och provkörd under gunicorn med lösenord och volym påslaget.
 
 ## Railway
@@ -47,6 +52,12 @@ appen någonstans i UTC hamnar lördagens påfyllning fel kring midnatt.
 
 **Månadsnamn kommer ur `clock.MONTHS`, inte ur systemets locale.** En server
 i USA skulle annars skriva "Aug" i stället för "aug".
+
+**CAD är bara visning.** Allt bokförs i öre. Kursen hämtas från Frankfurter
+(ECB) högst var sjätte timme och sparas i tabellen `setting`; går det inte
+används senaste kursen, annars `valuta.RESERVKURS`. `VECKOPENG_CAD_KURS`
+låser kursen och stänger av hämtningen. Inget hämtas så länge ingen valt CAD.
+Momsläget avrundar nedåt – hellre en cent över än en för lite i kassan.
 
 **Ändrad veckopeng gäller bara framåt.** Redan bokförda lördagar rörs inte.
 
@@ -99,6 +110,7 @@ Inget av det här är beställt än – det är sådant som ligger nära till ha
 | `allowance.py` | Lördagspåfyllningen och `next_saturday()` |
 | `db.py` | SQLite-schema och alla frågor |
 | `money.py` | `parse_amount()`, `format_ore()`, `ore_to_input()` |
+| `valuta.py` | CAD-kursen, omräkning och momsen (13 %) |
 | `clock.py` | Svensk tid, `saturdays()`, `format_date()` |
 | `templates/index.html` | Startvyn med alla barn |
 | `templates/child.html` | Barnsidan med historik och formulär |
@@ -107,3 +119,4 @@ Inget av det här är beställt än – det är sådant som ligger nära till ha
 | `Procfile` | Startkommandot Railway använder |
 | `tests/test_veckopeng.py` | 34 tester för pengar, lördagar och saldon |
 | `tests/test_auth.py` | 11 tester för inloggningen |
+| `tests/test_valuta.py` | 16 tester för CAD, kursen och momsen |
