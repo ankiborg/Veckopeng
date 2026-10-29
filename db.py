@@ -45,8 +45,70 @@ CREATE TABLE IF NOT EXISTS setting (
 
 
 def db_path() -> Path:
-    """Var databasen ligger. VECKOPENG_DB kan peka om den (tester, backup)."""
-    return Path(os.environ.get("VECKOPENG_DB") or DEFAULT_PATH)
+    """Var databasen ligger.
+
+    1. VECKOPENG_DB om den är satt (tester, eget val).
+    2. Railways volym om en sådan är monterad – Railway sätter då
+       RAILWAY_VOLUME_MOUNT_PATH själv. Då räcker det att lägga till
+       volymen; ingen variabel att stava rätt.
+    3. Annars bredvid koden, som hemma.
+    """
+    if explicit := os.environ.get("VECKOPENG_DB", "").strip():
+        return Path(explicit)
+    if volym := os.environ.get("RAILWAY_VOLUME_MOUNT_PATH", "").strip():
+        return Path(volym) / "veckopeng.db"
+    return DEFAULT_PATH
+
+
+def pa_railway() -> bool:
+    return bool(
+        os.environ.get("RAILWAY_ENVIRONMENT_NAME")
+        or os.environ.get("RAILWAY_PROJECT_ID")
+    )
+
+
+def sparas_sakert() -> bool:
+    """Överlever databasen nästa deploy?
+
+    Railways filsystem nollställs vid varje deploy. Bara det som ligger på
+    en volym finns kvar – annars försvinner barnen och alla saldon nästa
+    gång någon pushar. Hemma är disken beständig och svaret alltid ja.
+    """
+    if not pa_railway():
+        return True
+    volym = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH", "").strip()
+    if not volym:
+        return False
+    return db_path().resolve().is_relative_to(Path(volym).resolve())
+
+
+TABELLER_SOM_MASTE_FINNAS = {"child", "txn"}
+
+
+def ar_veckopengsfil(path: str | Path) -> bool:
+    """Är filen en riktig Veckopeng-databas? Kollas innan den får ersätta
+    den levande – en felvald fil ska inte kunna radera barnen."""
+    try:
+        c = sqlite3.connect(f"file:{Path(path)}?mode=ro", uri=True)
+        try:
+            if c.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                return False
+            namn = {
+                r[0]
+                for r in c.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+            }
+            return TABELLER_SOM_MASTE_FINNAS <= namn
+        finally:
+            c.close()
+    except sqlite3.DatabaseError:
+        return False
+
+
+def kopiera(fran: sqlite3.Connection, till: sqlite3.Connection) -> None:
+    """Kopiera hela databasen med SQLites backup-API. Tar med det som
+    ligger i WAL-filen, och fungerar medan den andra gunicorn-arbetaren
+    läser – en vanlig filkopia gör inget av det."""
+    fran.backup(till)
 
 
 def connect(path: str | Path | None = None) -> sqlite3.Connection:

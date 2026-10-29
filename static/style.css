@@ -345,6 +345,37 @@ h2 { font-size: 1rem; color: var(--svag); margin: 1.5rem 0 .6rem; }
 
 .tomt { color: var(--svag); text-align: center; padding: 1.5rem 0; }
 
+/* --- säkerhetskopia och larm --- */
+
+.larm {
+  margin-bottom: 1rem;
+  padding: .85rem 1rem;
+  border-radius: 10px;
+  border: 2px solid var(--minus);
+  background: var(--kort);
+  font-size: .92rem;
+}
+
+.larm strong { display: block; color: var(--minus); margin-bottom: .2rem; }
+
+.hjalp { margin: 0; color: var(--svag); font-size: .9rem; }
+
+.knapp {
+  display: block;
+  padding: .7rem 1rem;
+  border: 1px solid var(--linje);
+  border-radius: 10px;
+  background: var(--papper);
+  color: var(--text);
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+.knapp:hover { border-color: var(--accent); }
+
+input[type="file"] { font: inherit; color: var(--text); }
+
 /* --- inloggning --- */
 
 .inloggning { max-width: 22rem; margin: 3rem auto 0; }

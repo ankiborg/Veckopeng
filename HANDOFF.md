@@ -16,24 +16,35 @@ momsknapp som visar vad barnen kan handla för på prislappen (före 13 % HST,
 Ontario). Valet sparas per telefon i sessionskakan. I CAD-läget skrivs belopp
 in i dollar och räknas om till öre; dollarbeloppet hamnar i anteckningen.
 
-61 tester gröna. Tidigare: 45 tester gröna. Appen är klickad igenom i webbläsare i ljust och mörkt läge,
+61 tester gröna. Tidigare: 45 tester gröna.
+
+**2026-10-29, senare:** Barnen och saldona försvann efter deployn av
+Kanada-läget – databasen låg inte på en volym. Annika la in dem igen för hand.
+Därför nu: databasen hamnar automatiskt på volymen när Railway har en
+(`RAILWAY_VOLUME_MOUNT_PATH`), ett rött larm syns i appen så länge den inte
+gör det, och en säkerhetskopia går att ladda ner och läsa in från startsidan.
+69 tester gröna. Appen är klickad igenom i webbläsare i ljust och mörkt läge,
 och provkörd under gunicorn med lösenord och volym påslaget.
 
 ## Railway
 
 Appen är byggd för att köras där, men **två inställningar är inte valfria**:
 
-1. **Volym monterad på `/data`, med `VECKOPENG_DB=/data/veckopeng.db`.**
-   Railways filsystem nollställs vid varje deploy. Utan volym raderas alla
-   saldon nästa gång någon pushar.
+1. **En volym.** Railways filsystem nollställs vid varje deploy. Utan volym
+   raderas alla saldon nästa gång någon pushar – det har hänt en gång.
+   Appen hittar volymen själv via `RAILWAY_VOLUME_MOUNT_PATH`; `VECKOPENG_DB`
+   behövs inte längre men vinner om den är satt. Saknas volymen visar appen
+   ett rött larm överst.
 2. **`VECKOPENG_LOSENORD` satt.** Adressen är publik. Utan lösenord kan vem
    som helst som hittar den läsa och ändra barnens pengar.
 
 `Procfile` sköter starten (gunicorn, 2 arbetare). `PORT` sätter Railway själv.
 `VECKOPENG_SECRET` behöver inte sättas – nyckeln härleds ur lösenordet.
 
-Databasen ligger bara på volymen. Den är familjens enda kopia, så hämta ut
-`/data/veckopeng.db` med jämna mellanrum.
+Databasen ligger bara på volymen. Den är familjens enda kopia – startsidan har
+en knapp för att ladda ner en säkerhetskopia och ett formulär för att läsa in
+den igen. Inläsningen kollar att filen är en Veckopeng-databas och sparar det
+gamla som `fore-aterstallning-*.db` bredvid innan något skrivs över.
 
 ## Beslut som är värda att känna till
 
@@ -120,3 +131,4 @@ Inget av det här är beställt än – det är sådant som ligger nära till ha
 | `tests/test_veckopeng.py` | 34 tester för pengar, lördagar och saldon |
 | `tests/test_auth.py` | 11 tester för inloggningen |
 | `tests/test_valuta.py` | 16 tester för CAD, kursen och momsen |
+| `tests/test_sakerhet.py` | 8 tester för volymen, larmet och säkerhetskopian |

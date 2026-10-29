@@ -49,4 +49,26 @@
       <button type="submit">Lägg till</button>
     </form>
   </details>
+
+  <details class="panel" {% if not sparas_sakert %}open{% endif %}>
+    <summary>Säkerhetskopia</summary>
+    <div class="stack">
+      <p class="hjalp">
+        Hela appen – barn, saldon och historik – i en fil. Spara den i Filer
+        eller i molnet då och då. Försvinner något läser du in den här igen.
+      </p>
+      <a class="knapp" href="{{ url_for('download_backup') }}">Ladda ner säkerhetskopia</a>
+
+      <form method="post" action="{{ url_for('restore_backup') }}"
+            enctype="multipart/form-data" class="stack farligt"
+            onsubmit="return confirm('Ersätta allt i appen med säkerhetskopian? Det som finns nu sparas undan först.')">
+        <label>
+          Läs in en säkerhetskopia
+          <input type="file" name="fil" required>
+          <small>Ersätter allt som finns i appen nu.</small>
+        </label>
+        <button type="submit" class="dra">Läs in</button>
+      </form>
+    </div>
+  </details>
 {% endblock %}

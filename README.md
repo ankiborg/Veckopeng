@@ -69,12 +69,13 @@ Railways filsystem nollställs vid varje deploy. Utan volym ligger
 saldon är då borta.
 
 I Railway: **Service → Variables → + Volume**, montera den på `/data`.
+Appen hittar volymen själv. Saknas den visar appen ett rött larm överst.
 
 ### 2. Miljövariabler
 
 | Variabel | Värde | Varför |
 | --- | --- | --- |
-| `VECKOPENG_DB` | `/data/veckopeng.db` | Lägger databasen på volymen |
+| `VECKOPENG_DB` | (behövs inte) | Appen använder volymen automatiskt. Sätts den vinner den |
 | `VECKOPENG_LOSENORD` | ett lösenord ni väljer | Adressen är publik – utan detta kan vem som helst som hittar den ändra barnens pengar |
 
 `PORT` sätter Railway själv. `VECKOPENG_SECRET` behövs inte; nyckeln som
@@ -99,8 +100,9 @@ följer lösenordet.
 
 ### Säkerhetskopiera
 
-Databasen ligger på volymen, inte i git. `railway ssh` och kopiera ut
-`/data/veckopeng.db` med jämna mellanrum – det är familjens enda kopia.
+Startsidan har **Säkerhetskopia → Ladda ner**. Spara filen i Filer eller i
+molnet då och då – det är familjens enda kopia. Samma ruta läser in en kopia
+igen om något försvinner.
 
 ## Tester
 
