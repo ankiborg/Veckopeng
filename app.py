@@ -8,11 +8,21 @@ from __future__ import annotations
 import os
 import sqlite3
 
-from flask import Flask, flash, g, redirect, render_template, request, url_for
+from flask import (
+    Flask,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 
 import allowance
 import auth
 import db
+import valuta
 from clock import format_date, parse_date, today, weekday_name
 from money import AmountError, format_ore, ore_to_input, parse_amount
 
@@ -51,7 +61,50 @@ def _accrue():
     allowance.accrue_all(conn())
 
 
-app.jinja_env.filters["kr"] = format_ore
+# --- visning: kronor eller kanadensiska dollar ---------------------------
+#
+# Valet sparas i sessionskakan, per telefon. Databasen är alltid i öre.
+
+
+def i_cad() -> bool:
+    return session.get("valuta") == "CAD"
+
+
+def med_moms() -> bool:
+    """Momsläget finns bara i CAD – svenska prislappar har redan momsen i sig."""
+    return i_cad() and bool(session.get("moms"))
+
+
+def kurs() -> valuta.Kurs:
+    if "kurs" not in g:
+        g.kurs = valuta.kurs(conn())
+    return g.kurs
+
+
+def visa(ore: int) -> str:
+    """Ett belopp i den valuta som är vald."""
+    return valuta.format_cent(kurs().till_cent(ore)) if i_cad() else format_ore(ore)
+
+
+def handla(ore: int) -> str:
+    """Ett saldo som det barnet kan handla för – före moms i momsläget."""
+    if med_moms() and ore > 0:
+        return valuta.format_cent(valuta.fore_moms(kurs().till_cent(ore)))
+    return visa(ore)
+
+
+@app.context_processor
+def _visning():
+    return {
+        "i_cad": i_cad(),
+        "med_moms": med_moms(),
+        "kurs": kurs if i_cad() else None,
+        "moms_procent": valuta.moms_procent(),
+    }
+
+
+app.jinja_env.filters["kr"] = visa
+app.jinja_env.filters["handla"] = handla
 app.jinja_env.filters["datum"] = format_date
 app.jinja_env.filters["falt"] = ore_to_input
 
@@ -92,6 +145,20 @@ def child(child_id: int):
 # --- åtgärder ------------------------------------------------------------
 
 
+@app.post("/visning")
+def set_display():
+    if (vald := request.form.get("valuta")) in {"SEK", "CAD"}:
+        session["valuta"] = vald
+    if (moms := request.form.get("moms")) is not None:
+        session["moms"] = moms == "1"
+    session.permanent = True  # ska komma ihåg valet, inte glömma det vid stängd flik
+    tillbaka = request.form.get("tillbaka", "")
+    # Bara interna sökvägar, samma spärr som vid inloggningen.
+    if tillbaka.startswith("/") and not tillbaka.startswith("//"):
+        return redirect(tillbaka)
+    return redirect(url_for("index"))
+
+
 @app.post("/barn/ny")
 def add_child():
     name = (request.form.get("name") or "").strip()
@@ -128,8 +195,16 @@ def add_transaction(child_id: int):
         return redirect(url_for("index"))
 
     riktning = request.form.get("direction", "in")
+    text = request.form.get("amount") or ""
     try:
-        belopp = abs(parse_amount(request.form.get("amount") or ""))
+        if i_cad():
+            # Skrivet i dollar: tolkas som cent och räknas om till öre.
+            # Det skrivna beloppet hamnar i anteckningen, så historiken
+            # stämmer med kvittot även när kursen rört sig.
+            cent = abs(parse_amount(text.replace("$", "").upper().replace("CAD", "")))
+            belopp = kurs().till_ore(cent)
+        else:
+            belopp = abs(parse_amount(text))
     except AmountError as exc:
         flash(str(exc), "fel")
         return redirect(url_for("child", child_id=child_id))
@@ -142,14 +217,19 @@ def add_transaction(child_id: int):
         return redirect(url_for("child", child_id=child_id))
 
     note = (request.form.get("note") or "").strip()
-    if riktning == "ut":
-        db.add_transaction(conn(), child_id, when, -belopp, "uttag", note or "Uttag")
-        flash(f"Drog bort {format_ore(belopp)} från {row['name']}.", "ok")
+    standard = "Uttag" if riktning == "ut" else "Insättning"
+    note = note or standard
+    if i_cad():
+        note = f"{note} ({valuta.format_cent(cent)})"
+        skrivet = valuta.format_cent(cent)
     else:
-        db.add_transaction(
-            conn(), child_id, when, belopp, "manuell", note or "Insättning"
-        )
-        flash(f"La till {format_ore(belopp)} till {row['name']}.", "ok")
+        skrivet = format_ore(belopp)
+    if riktning == "ut":
+        db.add_transaction(conn(), child_id, when, -belopp, "uttag", note)
+        flash(f"Drog bort {skrivet} från {row['name']}.", "ok")
+    else:
+        db.add_transaction(conn(), child_id, when, belopp, "manuell", note)
+        flash(f"La till {skrivet} till {row['name']}.", "ok")
     return redirect(url_for("child", child_id=child_id))
 
 
@@ -168,7 +248,7 @@ def pay_out(child_id: int):
     db.add_transaction(
         conn(), child_id, today().isoformat(), -saldo, "uttag", "Utbetalt"
     )
-    flash(f"Betalade ut {format_ore(saldo)} till {row['name']}. Saldot är nollat.", "ok")
+    flash(f"Betalade ut {visa(saldo)} till {row['name']}. Saldot är nollat.", "ok")
     return redirect(url_for("child", child_id=child_id))
 
 

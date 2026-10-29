@@ -8,10 +8,19 @@
 
 {% block content %}
   <section class="summa">
-    <p class="summa-etikett">{{ child['name'] }} har tjänat in</p>
-    <p class="summa-belopp {{ 'minus' if child['balance_ore'] < 0 }}">
-      {{ child['balance_ore']|kr }}
-    </p>
+    {% if med_moms and child['balance_ore'] > 0 %}
+      <p class="summa-etikett">{{ child['name'] }} kan handla för</p>
+      <p class="summa-belopp">{{ child['balance_ore']|handla }}</p>
+      <p class="summa-not">
+        på prislappen – {{ moms_procent }} moms tillkommer i kassan.<br>
+        Saldot är {{ child['balance_ore']|kr }}.
+      </p>
+    {% else %}
+      <p class="summa-etikett">{{ child['name'] }} har tjänat in</p>
+      <p class="summa-belopp {{ 'minus' if child['balance_ore'] < 0 }}">
+        {{ child['balance_ore']|kr }}
+      </p>
+    {% endif %}
     <p class="summa-not">{{ child['weekly_ore']|kr }} varje lördag</p>
   </section>
 
@@ -19,9 +28,10 @@
         class="panel stack">
     <div class="rad">
       <label class="vaxa">
-        Belopp
+        Belopp{% if i_cad %} i CAD{% endif %}
         <input type="text" name="amount" inputmode="decimal" required
-               autocomplete="off" placeholder="20">
+               autocomplete="off" placeholder="{{ '5' if i_cad else '20' }}">
+        {% if i_cad %}<small>Det som faktiskt betalades, med moms.</small>{% endif %}
       </label>
       <label class="vaxa">
         Datum

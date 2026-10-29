@@ -13,9 +13,15 @@
           <a href="{{ url_for('child', child_id=barn['id']) }}">
             <span class="barn-namn">{{ barn['name'] }}</span>
             <span class="barn-saldo {{ 'minus' if barn['balance_ore'] < 0 }}">
-              {{ barn['balance_ore']|kr }}
+              {{ barn['balance_ore']|handla }}
             </span>
-            <span class="barn-veckopeng">{{ barn['weekly_ore']|kr }} i veckan</span>
+            <span class="barn-veckopeng">
+              {%- if med_moms and barn['balance_ore'] > 0 -%}
+                kan handla för, före moms
+              {%- else -%}
+                {{ barn['weekly_ore']|kr }} i veckan
+              {%- endif -%}
+            </span>
           </a>
         </li>
       {% endfor %}

@@ -14,6 +14,28 @@
   </header>
 
   <main>
+    {% if request.endpoint != 'login' %}
+      {# Två lägen per telefon: kronor eller dollar, och i dollar även
+         prislappspris före moms. Sparas i sessionskakan. #}
+      <form method="post" action="{{ url_for('set_display') }}" class="visning">
+        <input type="hidden" name="tillbaka" value="{{ request.path }}">
+        <div class="vaxel" role="group" aria-label="Valuta">
+          <button type="submit" name="valuta" value="SEK"
+                  aria-pressed="{{ 'false' if i_cad else 'true' }}">kr</button>
+          <button type="submit" name="valuta" value="CAD"
+                  aria-pressed="{{ 'true' if i_cad else 'false' }}">CAD</button>
+        </div>
+        {% if i_cad %}
+          <button type="submit" name="moms" value="{{ '0' if med_moms else '1' }}"
+                  class="momsknapp" role="switch"
+                  aria-checked="{{ 'true' if med_moms else 'false' }}">
+            <span class="reglage" aria-hidden="true"></span>
+            Räkna med {{ moms_procent }} moms
+          </button>
+        {% endif %}
+      </form>
+    {% endif %}
+
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <ul class="flash">
@@ -28,6 +50,14 @@
   </main>
 
   <footer>
+    {% if kurs %}
+      {% set k = kurs() %}
+      <span class="kursrad">
+        1 kr = {{ '%.4f'|format(k.cad_per_kr)|replace('.', ',') }} CAD
+        {%- if k.datum %} (ECB {{ k.datum|datum }}){% else %} (ungefärlig kurs){% endif %}
+      </span>
+      <span class="radbryt"></span>
+    {% endif %}
     {# Inloggningssidan skickar inget next_saturday – den vet inget om barnen. #}
     {% if next_saturday %}
       Nästa påfyllning: <strong>lördag {{ next_saturday|datum }}</strong>

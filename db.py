@@ -35,6 +35,12 @@ CREATE INDEX IF NOT EXISTS ix_txn_child ON txn(child_id, date);
 -- blir det ändå bara en veckopeng per lördag och barn.
 CREATE UNIQUE INDEX IF NOT EXISTS ux_txn_veckopeng
     ON txn(child_id, date) WHERE kind = 'veckopeng';
+
+-- Småsaker som ska överleva omstarter, t.ex. senast hämtade CAD-kurs.
+CREATE TABLE IF NOT EXISTS setting (
+    key         TEXT PRIMARY KEY,
+    value       TEXT NOT NULL
+);
 """
 
 
