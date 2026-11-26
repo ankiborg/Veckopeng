@@ -36,6 +36,15 @@
       </form>
     {% endif %}
 
+    {% if not sparas_sakert %}
+      <div class="larm">
+        <strong>Barnen och saldona sparas inte.</strong>
+        Appen har ingen volym på Railway, så allt försvinner vid nästa deploy.
+        Ladda ner en säkerhetskopia nedan nu. Lägg sedan till en volym
+        (tjänsten → <em>+ Volume</em>, montera på <code>/data</code>).
+      </div>
+    {% endif %}
+
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <ul class="flash">

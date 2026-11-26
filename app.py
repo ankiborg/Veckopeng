@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import tempfile
 
 from flask import (
     Flask,
@@ -15,6 +16,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     session,
     url_for,
 )
@@ -23,12 +25,14 @@ import allowance
 import auth
 import db
 import valuta
-from clock import format_date, parse_date, today, weekday_name
+from clock import format_date, now_local, parse_date, today, weekday_name
 from money import AmountError, format_ore, ore_to_input, parse_amount
 
 DEFAULT_WEEKLY_ORE = 2500  # 25 kr
 
 app = Flask(__name__)
+# En säkerhetskopia är några hundra kB. Taket stoppar en felvald film.
+app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 
 # Installeras FÖRE _accrue nedan. before_request-funktioner körs i den
 # ordning de registreras, och en utloggad besökare ska stoppas innan
@@ -96,6 +100,7 @@ def handla(ore: int) -> str:
 @app.context_processor
 def _visning():
     return {
+        "sparas_sakert": db.sparas_sakert(),
         "i_cad": i_cad(),
         "med_moms": med_moms(),
         "kurs": kurs if i_cad() else None,
@@ -308,6 +313,68 @@ def remove_child(child_id: int):
         return redirect(url_for("child", child_id=child_id))
     db.delete_child(conn(), child_id)
     flash(f"{row['name']} och all historik är borttagen.", "ok")
+    return redirect(url_for("index"))
+
+
+# --- säkerhetskopia -------------------------------------------------------
+
+
+@app.get("/sakerhetskopia")
+def download_backup():
+    """Hela databasen som en fil. Går att spara i Filer på telefonen."""
+    fd, tmp = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    kopia = sqlite3.connect(tmp)
+    try:
+        db.kopiera(conn(), kopia)
+    finally:
+        kopia.close()
+    svar = send_file(
+        tmp,
+        as_attachment=True,
+        download_name=f"veckopeng-{today().isoformat()}.db",
+        mimetype="application/octet-stream",
+        max_age=0,
+    )
+    svar.call_on_close(lambda: os.unlink(tmp))
+    return svar
+
+
+@app.post("/sakerhetskopia/aterstall")
+def restore_backup():
+    fil = request.files.get("fil")
+    if fil is None or not fil.filename:
+        flash("Välj en säkerhetskopia att läsa in.", "fel")
+        return redirect(url_for("index"))
+
+    fd, tmp = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        fil.save(tmp)
+        if not db.ar_veckopengsfil(tmp):
+            flash("Filen är ingen säkerhetskopia från Veckopeng. Inget ändrades.", "fel")
+            return redirect(url_for("index"))
+
+        # Det som ligger i appen nu sparas bredvid innan det skrivs över –
+        # valde man fel fil ska det gå att ångra.
+        fore = db.db_path().parent / f"fore-aterstallning-{now_local():%Y%m%d-%H%M%S}.db"
+        sparad = sqlite3.connect(str(fore))
+        try:
+            db.kopiera(conn(), sparad)
+        finally:
+            sparad.close()
+
+        kalla = sqlite3.connect(tmp)
+        try:
+            db.kopiera(kalla, conn())
+        finally:
+            kalla.close()
+        db.init(conn())  # en äldre kopia kan sakna nyare tabeller
+    finally:
+        os.unlink(tmp)
+
+    allowance.accrue_all(conn())
+    flash("Säkerhetskopian är inläst.", "ok")
     return redirect(url_for("index"))
 
 
